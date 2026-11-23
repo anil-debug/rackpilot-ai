@@ -1,0 +1,25 @@
+# Go
+*.exe
+*.test
+*.out
+vendor/
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Local data
+data/
