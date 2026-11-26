@@ -1,0 +1,99 @@
+{
+  "title": "RackPilot BMC Hardware Health",
+  "uid": "rackpilot-bmc-synthetic",
+  "tags": ["rackpilot", "bmc", "synthetic"],
+  "schemaVersion": 39,
+  "refresh": "10s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "type": "text",
+      "title": "Disclaimer",
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "options": {
+        "mode": "markdown",
+        "content": "# Synthetic BMC / Redfish Telemetry\n\nNot real Supermicro or physical hardware readings."
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Temperature (simulated)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_cpu_temperature_celsius", "legendFormat": "{{cpu_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "CPU Utilization (simulated)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 3 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_cpu_utilization_percent", "legendFormat": "{{cpu_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Used % (simulated)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{
+        "expr": "100 * rackpilot_bmc_memory_used_bytes / rackpilot_bmc_memory_total_bytes",
+        "legendFormat": "{{server_id}}"
+      }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Memory Errors (simulated)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_memory_errors_total", "legendFormat": "{{dimm_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Fan RPM",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_fan_speed_rpm", "legendFormat": "{{fan_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Fan Health (0=OK)",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_fan_health_status", "legendFormat": "{{fan_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "PSU Power (W)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_psu_power_watts", "legendFormat": "{{psu_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "PSU Health",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 27 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_psu_health_status", "legendFormat": "{{psu_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "System Power (W)",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_system_power_watts", "legendFormat": "{{server_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Temperature Sensors",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 35 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_temperature_sensor_celsius", "legendFormat": "{{sensor_id}}" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Overall System Health",
+      "gridPos": { "h": 8, "w": 24, "x": 0, "y": 43 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [{ "expr": "rackpilot_bmc_system_health_status", "legendFormat": "{{server_id}}" }]
+    }
+  ]
+}

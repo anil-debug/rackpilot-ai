@@ -1,0 +1,23 @@
+# RackPilot — synthetic GPU/BMC simulators + optional Kubernetes lab (Milestone 4).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_config_files:
+  - /etc/prometheus/k8s/scrape.yml
+
+scrape_configs:
+  - job_name: rackpilot-gpu-simulator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - gpu-simulator:8080
+        labels:
+          rackpilot_telemetry: synthetic
+  - job_name: rackpilot-bmc-simulator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - bmc-simulator:8081
+        labels:
+          rackpilot_telemetry: synthetic

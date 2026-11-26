@@ -1,0 +1,14 @@
+.git
+.gitignore
+bin
+**/*_test.go
+**/*.md
+!testdata/**/*.md
+docs
+deployments
+monitoring
+ai-agent
+services
+tests
+**/.env
+**/.env.*

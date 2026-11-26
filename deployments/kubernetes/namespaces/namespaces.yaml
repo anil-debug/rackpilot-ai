@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rackpilot
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/managed-by: rackpilot-k8s
+    rackpilot.io/layer: workloads
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/managed-by: rackpilot-k8s
+    rackpilot.io/layer: monitoring

@@ -1,0 +1,61 @@
+# Read-only API access for external RackPilot Prometheus (no cluster-admin kubeconfig).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rackpilot-prometheus-scrape
+  namespace: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/managed-by: rackpilot-k8s
+    app.kubernetes.io/component: prometheus-scrape
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rackpilot-prometheus-scrape-token
+  namespace: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+  annotations:
+    kubernetes.io/service-account.name: rackpilot-prometheus-scrape
+type: kubernetes.io/service-account-token
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: rackpilot-prometheus-scrape
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+rules:
+  - nonResourceURLs: ["/metrics", "/metrics/cadvisor"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - nodes/metrics
+      - nodes/proxy
+      - nodes/stats
+      - services
+      - services/proxy
+      - endpoints
+      - pods
+      - namespaces
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["discovery.k8s.io"]
+    resources: ["endpointslices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rackpilot-prometheus-scrape
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rackpilot-prometheus-scrape
+subjects:
+  - kind: ServiceAccount
+    name: rackpilot-prometheus-scrape
+    namespace: rackpilot-monitoring

@@ -1,0 +1,299 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "gridPos": { "h": 3, "w": 24, "x": 0, "y": 0 },
+      "id": 1,
+      "options": {
+        "code": { "language": "plaintext", "showLineNumbers": false },
+        "content": "# RackPilot — **Synthetic** GPU Telemetry\n\nAll metrics in this dashboard come from the **GPU Telemetry Simulator**. They are **not** measurements from physical NVIDIA hardware.",
+        "mode": "markdown"
+      },
+      "title": "Disclaimer",
+      "type": "text"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "axisBorderShow": false,
+            "axisCenteredZero": false,
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 3 },
+      "id": 2,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "expr": "rackpilot_gpu_temperature_celsius",
+          "legendFormat": "{{gpu_id}} ({{model}})",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Temperature (simulated)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 3 },
+      "id": 3,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "rackpilot_gpu_utilization_percent",
+          "legendFormat": "{{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Utilization (simulated)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "max": 100,
+          "min": 0,
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 11 },
+      "id": 4,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "100 * rackpilot_gpu_memory_used_bytes / rackpilot_gpu_memory_total_bytes",
+          "legendFormat": "{{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Memory Used % (simulated)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "custom": {
+            "drawStyle": "line",
+            "fillOpacity": 10,
+            "lineWidth": 2,
+            "showPoints": "never",
+            "spanNulls": true
+          },
+          "unit": "watt"
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 11 },
+      "id": 5,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "rackpilot_gpu_power_watts",
+          "legendFormat": "{{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Power (simulated)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "mappings": [
+            { "options": { "0": { "color": "green", "index": 0, "text": "healthy" } }, "type": "value" },
+            { "options": { "1": { "color": "yellow", "index": 1, "text": "warning" } }, "type": "value" },
+            { "options": { "2": { "color": "red", "index": 2, "text": "critical" } }, "type": "value" }
+          ],
+          "max": 2,
+          "min": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 1 },
+              { "color": "red", "value": 2 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 19 },
+      "id": 6,
+      "options": {
+        "legend": { "displayMode": "table", "placement": "bottom", "showLegend": true },
+        "tooltip": { "mode": "multi", "sort": "desc" }
+      },
+      "targets": [
+        {
+          "expr": "rackpilot_gpu_health_status",
+          "legendFormat": "{{gpu_id}}",
+          "refId": "A"
+        }
+      ],
+      "title": "GPU Health (0=healthy, 1=warning, 2=critical)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "thresholds" },
+          "custom": {
+            "align": "auto",
+            "cellOptions": { "type": "auto" },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Health" },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  { "options": { "0": { "text": "healthy" } }, "type": "value" },
+                  { "options": { "1": { "text": "warning" } }, "type": "value" },
+                  { "options": { "2": { "text": "critical" } }, "type": "value" }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 19 },
+      "id": 7,
+      "options": {
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "showHeader": true,
+        "sortBy": [{ "desc": false, "displayName": "GPU" }]
+      },
+      "pluginVersion": "11.3.0",
+      "targets": [
+        {
+          "expr": "rackpilot_gpu_temperature_celsius",
+          "format": "table",
+          "instant": true,
+          "refId": "temp"
+        },
+        {
+          "expr": "rackpilot_gpu_utilization_percent",
+          "format": "table",
+          "instant": true,
+          "refId": "util"
+        },
+        {
+          "expr": "100 * rackpilot_gpu_memory_used_bytes / rackpilot_gpu_memory_total_bytes",
+          "format": "table",
+          "instant": true,
+          "refId": "mem"
+        },
+        {
+          "expr": "rackpilot_gpu_power_watts",
+          "format": "table",
+          "instant": true,
+          "refId": "pwr"
+        },
+        {
+          "expr": "rackpilot_gpu_health_status",
+          "format": "table",
+          "instant": true,
+          "refId": "health"
+        }
+      ],
+      "title": "Per-GPU snapshot (simulated)",
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "__name__": true, "instance": true, "job": true, "model": false, "rackpilot_telemetry": true },
+            "renameByName": {
+              "Value #temp": "Temp °C",
+              "Value #util": "Util %",
+              "Value #mem": "Mem %",
+              "Value #pwr": "Power W",
+              "Value #health": "Health",
+              "gpu_id": "GPU",
+              "model": "Model"
+            }
+          }
+        }
+      ],
+      "type": "table"
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["rackpilot", "gpu", "synthetic"],
+  "templating": { "list": [] },
+  "time": { "from": "now-15m", "to": "now" },
+  "timepicker": {},
+  "timezone": "browser",
+  "title": "RackPilot Synthetic GPU Telemetry",
+  "uid": "rackpilot-gpu-synthetic",
+  "version": 1
+}

@@ -1,0 +1,51 @@
+# Rendered to /mnt/ssd/rackpilot-data/prometheus/k8s/scrape.yml (API address is cluster-specific).
+# TLS: cluster CA + dedicated SA token — not an administrator kubeconfig.
+
+scrape_configs:
+  - job_name: rackpilot-kube-state-metrics
+    scheme: https
+    honor_timestamps: true
+    scrape_interval: 30s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    metrics_path: /api/v1/namespaces/rackpilot-monitoring/services/rackpilot-kube-state-metrics:http-metrics/proxy/metrics
+    static_configs:
+      - targets:
+          - __API_ADDRESS__
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_telemetry: kubernetes
+    metric_relabel_configs:
+      - source_labels: [namespace]
+        regex: rackpilot|rackpilot-monitoring
+        action: keep
+
+  - job_name: rackpilot-kubernetes-cadvisor
+    scheme: https
+    honor_timestamps: false
+    scrape_interval: 30s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    kubernetes_sd_configs:
+      - role: node
+        api_server: https://__API_ADDRESS__
+        bearer_token_file: /etc/prometheus/k8s/token
+        tls_config:
+          ca_file: /etc/prometheus/k8s/ca.crt
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: __metrics_path__
+        regex: (.+)
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      - target_label: __address__
+        replacement: __API_ADDRESS__
+      - target_label: cluster
+        replacement: rackpilot-kind
+      - target_label: rackpilot_telemetry
+        replacement: kubernetes
+    metric_relabel_configs:
+      - source_labels: [namespace]
+        regex: rackpilot
+        action: keep

@@ -1,0 +1,22 @@
+# RackPilot kind lab — API bound to loopback; host port 16443.
+# Node-related host data: /mnt/ssd/rackpilot-kind/node-data
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: rackpilot-kind
+networking:
+  apiServerAddress: "127.0.0.1"
+  apiServerPort: 16443
+nodes:
+  - role: control-plane
+    extraMounts:
+      - hostPath: /mnt/ssd/rackpilot-kind/node-data
+        containerPath: /var/lib/kubelet
+        readOnly: false
+        propagation: HostToContainer
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          certSANs:
+            - "127.0.0.1"
+            - "localhost"

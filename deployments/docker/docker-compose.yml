@@ -1,0 +1,145 @@
+# RackPilot observability stack — isolated project "rackpilot".
+# Start: docker compose -p rackpilot -f deployments/docker/docker-compose.yml up -d --build
+# Do not use: docker compose down -v (preserves SSD bind mounts; never prune global volumes).
+
+name: rackpilot
+
+networks:
+  rackpilot:
+    name: rackpilot_net
+    driver: bridge
+  kind:
+    external: true
+    name: kind
+
+services:
+  gpu-simulator:
+    build:
+      context: ../..
+      dockerfile: simulator/gpu/Dockerfile
+    image: rackpilot/gpu-simulator:0.1.0
+    container_name: rackpilot-gpu-simulator
+    restart: unless-stopped
+    networks:
+      - rackpilot
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:8080:8080"
+    environment:
+      RACKPILOT_LISTEN: ":8080"
+      RACKPILOT_GPU_COUNT: ${RACKPILOT_GPU_COUNT:-4}
+      RACKPILOT_GPU_MODEL: ${RACKPILOT_GPU_MODEL:-NVIDIA H100 80GB}
+      RACKPILOT_TICK_MS: ${RACKPILOT_TICK_MS:-2000}
+      RACKPILOT_SIM_SEED: ${RACKPILOT_SIM_SEED:-42}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  bmc-simulator:
+    build:
+      context: ../..
+      dockerfile: simulator/bmc/Dockerfile
+    image: rackpilot/bmc-simulator:0.1.0
+    container_name: rackpilot-bmc-simulator
+    restart: unless-stopped
+    networks:
+      - rackpilot
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:8082:8081"
+    environment:
+      RACKPILOT_BMC_LISTEN: ":8081"
+      RACKPILOT_BMC_TICK_MS: ${RACKPILOT_BMC_TICK_MS:-2000}
+      RACKPILOT_BMC_SIM_SEED: ${RACKPILOT_BMC_SIM_SEED:-42}
+      RACKPILOT_BMC_SERVER_MODEL: ${RACKPILOT_BMC_SERVER_MODEL:-SYS-210P-FakeSim}
+      RACKPILOT_BMC_MODE: ${RACKPILOT_BMC_MODE:-dynamic}
+      RACKPILOT_BMC_FIXTURE_ROOT: ${RACKPILOT_BMC_FIXTURE_ROOT:-/fixtures/dmtf/public-rackmount1}
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8081/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: rackpilot-prometheus
+    user: "1000:1000"
+    restart: unless-stopped
+    networks:
+      - rackpilot
+      - kind
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:9090:9090"
+    volumes:
+      - ../../monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - /mnt/ssd/rackpilot-data/prometheus:/prometheus
+      - /mnt/ssd/rackpilot-data/prometheus/k8s:/etc/prometheus/k8s:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --web.enable-lifecycle
+      - --storage.tsdb.retention.time=15d
+    depends_on:
+      gpu-simulator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:9090/-/healthy"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  incident-engine:
+    build:
+      context: ../..
+      dockerfile: incident/Dockerfile
+    image: rackpilot/incident-engine:0.1.0
+    container_name: rackpilot-incident-engine
+    restart: unless-stopped
+    networks:
+      - rackpilot
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:8083:8083"
+    environment:
+      RACKPILOT_INCIDENT_LISTEN: ":8083"
+      RACKPILOT_PROMETHEUS_URL: "http://prometheus:9090"
+      RACKPILOT_INCIDENT_POLL_MS: "15000"
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8083/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: rackpilot-grafana
+    user: "1000:1000"
+    restart: unless-stopped
+    networks:
+      - rackpilot
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-rackpilot-dev}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_SERVER_ROOT_URL: ${GRAFANA_ROOT_URL:-http://127.0.0.1:3000}
+    volumes:
+      - ../../monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ../../monitoring/grafana/dashboards:/etc/grafana/dashboards:ro
+      - /mnt/ssd/rackpilot-data/grafana:/var/lib/grafana
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
