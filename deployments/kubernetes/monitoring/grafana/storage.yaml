@@ -1,0 +1,42 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rackpilot-grafana-data
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    rackpilot.io/storage: grafana
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: rackpilot-hostpath
+  hostPath:
+    path: /var/lib/kubelet/rackpilot-grafana
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - rackpilot-kind-control-plane
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rackpilot-grafana-data
+  namespace: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/part-of: rackpilot
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: rackpilot-hostpath
+  resources:
+    requests:
+      storage: 5Gi
+  volumeName: rackpilot-grafana-data

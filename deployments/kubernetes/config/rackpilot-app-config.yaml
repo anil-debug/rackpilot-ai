@@ -1,0 +1,28 @@
+# Non-sensitive configuration for RackPilot application tier (namespace: rackpilot).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rackpilot-app-config
+  namespace: rackpilot
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/managed-by: rackpilot-k8s
+    rackpilot.io/app-tier: rackpilot-core
+data:
+  RACKPILOT_GPU_COUNT: "4"
+  RACKPILOT_GPU_MODEL: "NVIDIA H100 80GB"
+  RACKPILOT_TICK_MS: "2000"
+  RACKPILOT_SIM_SEED: "42"
+  RACKPILOT_BMC_TICK_MS: "2000"
+  RACKPILOT_BMC_SIM_SEED: "42"
+  RACKPILOT_BMC_SERVER_MODEL: "SYS-210P-FakeSim"
+  RACKPILOT_BMC_MODE: "dynamic"
+  RACKPILOT_BMC_FIXTURE_ROOT: "/fixtures/dmtf/public-rackmount1"
+  # In-cluster Prometheus (M7.1). For Compose bridge, use compose-prometheus.rackpilot.svc.cluster.local
+  RACKPILOT_PROMETHEUS_URL: "http://prometheus.rackpilot-monitoring.svc.cluster.local:9090"
+  RACKPILOT_INCIDENT_POLL_MS: "15000"
+  RACKPILOT_INVESTIGATOR_MODE: "deterministic"
+  RACKPILOT_EVIDENCE_BEFORE: "10m"
+  RACKPILOT_EVIDENCE_AFTER: "5m"
+  RACKPILOT_INCIDENT_ENGINE_URL: "http://incident-engine.rackpilot.svc.cluster.local:8083"
+  RACKPILOT_BMC_URL: "http://bmc-simulator.rackpilot.svc.cluster.local:8081"

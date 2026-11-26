@@ -1,0 +1,19 @@
+# Headless bridge to Docker Compose Prometheus on the kind Docker network.
+# deploy.sh patches Endpoints with the current rackpilot-prometheus container IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: compose-prometheus
+  namespace: rackpilot
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/managed-by: rackpilot-k8s
+    rackpilot.io/app-tier: rackpilot-core
+    app.kubernetes.io/component: compose-prometheus-bridge
+spec:
+  ports:
+    - name: http
+      port: 9090
+      targetPort: 9090
+      protocol: TCP
+# Endpoints for compose-prometheus are created by deploy.sh (loopback IPs are invalid in manifests).

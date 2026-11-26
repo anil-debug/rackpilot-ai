@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: rackpilot-monitoring
+resources:
+  - prometheus-scrape-rbac.yaml
+  - kube-state-metrics.yaml
+  - prometheus/rbac.yaml
+  - prometheus/storage.yaml
+  - prometheus/deployment.yaml
+  - prometheus/service.yaml
+  - grafana/storage.yaml
+  - grafana/deployment.yaml
+  - grafana/service.yaml
+configMapGenerator:
+  - name: rackpilot-prometheus-config
+    files:
+      - prometheus.yml=prometheus/prometheus.yml
+  - name: rackpilot-grafana-datasources
+    files:
+      - prometheus.yaml=grafana/provisioning/datasources/prometheus.yaml
+  - name: rackpilot-grafana-dashboard-providers
+    files:
+      - dashboards.yaml=grafana/provisioning/dashboards/dashboards.yaml
+  - name: rackpilot-grafana-dashboards
+    files:
+      - rackpilot-gpu-synthetic.json=grafana/dashboards/rackpilot-gpu-synthetic.json
+      - rackpilot-bmc-synthetic.json=grafana/dashboards/rackpilot-bmc-synthetic.json
+      - rackpilot-kubernetes-overview.json=grafana/dashboards/rackpilot-kubernetes-overview.json

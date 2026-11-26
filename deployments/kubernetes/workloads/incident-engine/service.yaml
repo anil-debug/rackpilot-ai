@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: incident-engine
+  namespace: rackpilot
+  labels:
+    app.kubernetes.io/name: incident-engine
+    app.kubernetes.io/part-of: rackpilot
+    rackpilot.io/app-tier: rackpilot-core
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: incident-engine
+  ports:
+    - name: http
+      port: 8083
+      targetPort: http

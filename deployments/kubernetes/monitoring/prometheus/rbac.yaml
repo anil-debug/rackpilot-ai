@@ -1,0 +1,25 @@
+# In-cluster Prometheus uses the existing scrape ClusterRole (no cluster-admin).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rackpilot-prometheus
+  namespace: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: rackpilot
+    app.kubernetes.io/component: monitoring
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rackpilot-prometheus-in-cluster
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: rackpilot-prometheus-scrape
+subjects:
+  - kind: ServiceAccount
+    name: rackpilot-prometheus
+    namespace: rackpilot-monitoring

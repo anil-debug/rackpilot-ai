@@ -35,6 +35,8 @@ If the kind control-plane IP changes, re-run the sync script and reload Promethe
 
 Labels on all Kubernetes targets: `cluster=rackpilot-kind`, `rackpilot_telemetry=kubernetes`.
 
+Application-tier jobs (Milestone 7) use the same API proxy pattern: `rackpilot-k8s-gpu-simulator`, `rackpilot-k8s-bmc-simulator`, `rackpilot-k8s-incident-engine`, `rackpilot-k8s-investigator` (see [kubernetes-deployment.md](kubernetes-deployment.md)). Compose jobs `rackpilot-gpu-simulator` / `rackpilot-bmc-simulator` may also be active if the Docker stack is running — filter by `rackpilot_deployment` or `instance`.
+
 Cardinality: `metric_relabel_configs` keep `kube_*` for `rackpilot` / `rackpilot-monitoring` and cAdvisor for `rackpilot` only.
 
 ## TLS notes (kind lab)

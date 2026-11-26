@@ -1,0 +1,44 @@
+# Data lives on the kind node host via extraMount:
+# host /mnt/ssd/rackpilot-kind/node-data → node /var/lib/kubelet
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: rackpilot-prometheus-data
+  labels:
+    app.kubernetes.io/part-of: rackpilot
+    rackpilot.io/storage: prometheus
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: rackpilot-hostpath
+  hostPath:
+    path: /var/lib/kubelet/rackpilot-prometheus
+    type: DirectoryOrCreate
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - rackpilot-kind-control-plane
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rackpilot-prometheus-data
+  namespace: rackpilot-monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/part-of: rackpilot
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: rackpilot-hostpath
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: rackpilot-prometheus-data

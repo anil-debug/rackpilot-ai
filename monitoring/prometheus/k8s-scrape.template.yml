@@ -49,3 +49,62 @@ scrape_configs:
       - source_labels: [namespace]
         regex: rackpilot
         action: keep
+
+  # RackPilot application tier (Kubernetes) — scraped via API proxy (ClusterIP not routable from Compose).
+  - job_name: rackpilot-k8s-gpu-simulator
+    scheme: https
+    scrape_interval: 15s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    metrics_path: /api/v1/namespaces/rackpilot/services/gpu-simulator:http/proxy/metrics
+    static_configs:
+      - targets:
+          - __API_ADDRESS__
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_telemetry: synthetic
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-k8s-bmc-simulator
+    scheme: https
+    scrape_interval: 15s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    metrics_path: /api/v1/namespaces/rackpilot/services/bmc-simulator:http/proxy/metrics
+    static_configs:
+      - targets:
+          - __API_ADDRESS__
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_telemetry: synthetic
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-k8s-incident-engine
+    scheme: https
+    scrape_interval: 30s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    metrics_path: /api/v1/namespaces/rackpilot/services/incident-engine:http/proxy/api/v1/metrics
+    static_configs:
+      - targets:
+          - __API_ADDRESS__
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-k8s-investigator
+    scheme: https
+    scrape_interval: 30s
+    bearer_token_file: /etc/prometheus/k8s/token
+    tls_config:
+      ca_file: /etc/prometheus/k8s/ca.crt
+    metrics_path: /api/v1/namespaces/rackpilot/services/investigator:http/proxy/metrics
+    static_configs:
+      - targets:
+          - __API_ADDRESS__
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_deployment: kubernetes

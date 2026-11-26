@@ -1,101 +1,133 @@
 # RackPilot AI
 
-**Synthetic data-center observability lab** — GPU and BMC simulators, Prometheus, Grafana, optional **kind** Kubernetes, and a deterministic **incident correlation engine**.
+**AI infrastructure monitoring, incident correlation, and evidence-backed root-cause investigation** — built as an open-source lab that unifies GPU, server hardware (BMC/Redfish), Kubernetes, and Prometheus signals.
 
-> All GPU/BMC telemetry and most Redfish responses in default modes are **synthetic**. They do not represent physical hardware.
+> Default GPU/BMC telemetry and most Redfish responses are **synthetic**. They demonstrate patterns for learning and portfolio use, not live production hardware.
 
-## Table of contents
+## The problem
 
-- [Purpose](#purpose)
-- [Features](#features)
-- [Architecture](#architecture)
-- [Technology stack](#technology-stack)
-- [Repository layout](#repository-layout)
-- [Prerequisites](#prerequisites)
-- [Quick start (Docker Compose)](#quick-start-docker-compose)
-- [Kubernetes (kind)](#kubernetes-kind)
-- [Simulators](#simulators)
-- [Monitoring](#monitoring)
-- [Incident correlation](#incident-correlation)
-- [API reference](#api-reference)
-- [Configuration](#configuration)
-- [Troubleshooting](#troubleshooting)
-- [Testing](#testing)
-- [Security](#security)
-- [Roadmap](#roadmap)
-- [Contributing](#contributing)
-- [License](#license)
+Modern AI infrastructure spans many layers: **GPU compute**, **server hardware**, **BMC/Redfish**, **cooling and power**, **Kubernetes workloads**, and **Prometheus observability**.
 
-## Purpose
+When something breaks, engineers jump between dashboards, hardware interfaces, and logs. Monitoring can show **abnormal metrics**, but it rarely:
 
-RackPilot AI explores how to **correlate** infrastructure signals (compute, hardware management, Kubernetes) using open observability tools. It is a **development and learning** codebase — not a product deployment claim.
+- Explains **relationships** between related failures  
+- Surfaces **likely root causes** with **evidence**  
+- Produces a structured **investigation narrative** engineers can act on  
 
-## Features
+RackPilot AI experiments with closing that gap using deterministic correlation first, then read-only evidence collection and investigation.
 
-| Area | Status |
-|------|--------|
-| Synthetic GPU telemetry simulator | Implemented |
-| Synthetic BMC / Redfish simulator | Implemented |
-| DMTF Redfish static fixture mode | Implemented |
-| Docker Compose observability stack | Implemented |
-| kind Kubernetes lab + Prometheus scrape | Implemented |
-| Deterministic incident correlation engine | Implemented |
-| LLM investigation / auto-remediation | Planned |
+## What RackPilot solves
 
-## Architecture
+RackPilot brings together:
 
-```mermaid
-flowchart LR
-  GPU[GPU simulator] --> Prom[Prometheus]
-  BMC[BMC simulator] --> Prom
-  K8s[kind cluster] --> Prom
-  Prom --> Graf[Grafana]
-  Prom --> Eng[Incident engine]
-  Eng --> API[Incidents API :8083]
-```
+| Signal domain | Role in RackPilot |
+|---------------|-------------------|
+| GPU telemetry | Utilization, temperature, memory pressure |
+| BMC / Redfish | Fans, PSU, thermals, event logs |
+| Kubernetes (kind lab) | Pod restarts, deployment availability |
+| Prometheus | Single query language across domains |
+| Incident engine | Correlates multi-signal incidents |
+| Investigator | Collects evidence and produces root-cause **reports** |
+| Remediation (future) | Approval-gated actions — **not implemented** |
+
+**Why combine signals?** A fan failure can precede GPU throttling; a PSU fault can correlate with workload unavailability. Independent silos hide these links; RackPilot normalizes observations and correlates them before investigation.
+
+## How it works
 
 ```mermaid
 flowchart TB
-  subgraph ingest [Incident engine]
-    Coll[Prometheus collector]
-    Norm[Signal normalization]
-    Rules[Correlation rules]
-    Store[(In-memory incidents)]
+  subgraph telem [Infrastructure telemetry]
+    GPU[GPU simulator]
+    BMC[BMC / Redfish simulator]
+    K8s[Kubernetes workloads]
   end
-  Prom2[Prometheus] --> Coll
-  Coll --> Norm --> Rules --> Store
-  Store --> HTTP[HTTP API]
+  telem --> Prom[Prometheus]
+  Prom --> Graf[Grafana]
+  Prom --> Eng[Incident correlation engine]
+  Eng --> IncAPI[Incidents API :8083]
+  IncAPI --> Inv[Root-cause investigator]
+  Prom --> EvC[Evidence collector]
+  BMC --> EvC
+  EvC --> Norm[Evidence normalization]
+  Norm --> Inv
+  Inv --> Rep[Investigation report]
+  Rep --> InvAPI[Investigations API :8084]
+  Rep -.->|future| Rem[Approval-based remediation]
 ```
 
-See also [docs/incident-correlation.md](docs/incident-correlation.md) and [docs/prometheus-kubernetes.md](docs/prometheus-kubernetes.md).
+| Stage | Status |
+|-------|--------|
+| Telemetry + Prometheus + Grafana | **Implemented** |
+| Incident correlation (Milestone 5) | **Implemented** |
+| Evidence collection + deterministic investigation (Milestone 6) | **Implemented** |
+| Optional LLM enrichment | **Implemented** (off by default) |
+| Approval-based remediation | **Planned** |
+
+Deep dives: [incident correlation](docs/incident-correlation.md) · [investigation](docs/investigation.md)
+
+## Real-world use cases (lab scenarios)
+
+| Scenario | What RackPilot detects | What investigation should establish |
+|----------|------------------------|-------------------------------------|
+| **GPU overheating** | GPU temp/util thresholds in Prometheus | Temp trend, utilization context; whether BMC thermals correlate |
+| **BMC fan failure** | `hardware_cooling` incident (fan health critical) | Fan health/speed evidence IDs, missing thermal history, hardware checks |
+| **PSU failure** | `power_supply` incident | PSU + system health series, event log snippets, redundancy checks |
+| **K8s workload instability** | `kubernetes_workload` incident | Restart counters, desired vs available replicas |
+| **Memory pressure** | `memory_pressure` incident | BMC memory errors + container memory working set |
+| **Multiple related signals** | Correlation rule merges contributors | Timeline ordering; hypotheses with supporting evidence IDs |
+
+Trigger examples:
+
+```bash
+# Fan failure → cooling incident
+curl -X POST http://127.0.0.1:8082/api/v1/scenarios/fan-failure \
+  -H 'Content-Type: application/json' -d '{"component_id":"fan-0"}'
+
+# GPU overheating
+curl -X POST http://127.0.0.1:8080/api/v1/scenarios/overheating \
+  -H 'Content-Type: application/json' -d '{"gpu_ids":["gpu-0"]}'
+```
+
+## Current implementation (milestones)
+
+| Milestone | Capability |
+|-----------|------------|
+| M1 | Go GPU telemetry simulator |
+| M2 | Docker Compose observability stack |
+| M3 | BMC/Redfish simulator + metrics |
+| M4 | DMTF Redfish fixture mode + kind Kubernetes monitoring |
+| M5 | Deterministic incident correlation engine |
+| M6 | Evidence-backed root-cause investigator (read-only) |
+| M7 | Kubernetes deployment of GPU, BMC, incident engine, investigator |
 
 ## Technology stack
 
-- **Go 1.23** — simulators and incident engine  
-- **Docker Compose** — local stack (`rackpilot` project)  
+- **Go 1.23** — simulators, incident engine, investigator  
+- **Docker Compose** — isolated `rackpilot` project  
 - **Prometheus / Grafana** — metrics and dashboards  
 - **kind** — optional Kubernetes lab  
-- **PromQL** — unified query language for correlation input  
+- **PromQL** — unified metric access for correlation and evidence  
 
 ## Repository layout
 
 ```
-cmd/                    # gpu-simulator, bmc-simulator, incident-engine
-simulator/gpu/          # GPU domain, engine, metrics, HTTP API
-simulator/bmc/          # BMC/Redfish, fixtures, metrics
-incident/               # correlation engine (ingest, rules, store, API)
-deployments/docker/     # Compose stack
-deployments/kubernetes/ # kind config, workloads, scrape RBAC
-monitoring/             # Prometheus + Grafana provisioning
-testdata/redfish/dmtf/  # DMTF fixture subset (BSD 3-Clause)
-docs/                   # deep-dive guides and images/
+cmd/                     # gpu-simulator, bmc-simulator, incident-engine, investigator
+simulator/gpu/           # GPU domain, metrics, HTTP API
+simulator/bmc/           # BMC/Redfish, fixtures, metrics
+incident/                # correlation engine (M5)
+investigation/           # evidence + investigation (M6)
+deployments/docker/      # Compose stack
+deployments/kubernetes/  # kind config, workloads, scrape RBAC
+monitoring/              # Prometheus + Grafana provisioning
+testdata/redfish/dmtf/   # DMTF fixture subset (BSD 3-Clause)
+docs/                    # guides and screenshots
 ```
 
 ## Prerequisites
 
 - Linux or macOS with **Docker**  
 - **Go 1.23+** for local builds  
-- ~4 GiB RAM for Compose + kind control plane  
+- ~4 GiB RAM for Compose + optional kind  
 - Optional: **kind**, **kubectl** for Kubernetes milestone  
 
 ## Quick start (Docker Compose)
@@ -104,7 +136,6 @@ docs/                   # deep-dive guides and images/
 git clone https://github.com/anil-debug/rackpilot-ai.git
 cd rackpilot-ai
 cp deployments/docker/.env.example deployments/docker/.env
-# Edit .env if needed — never commit secrets.
 
 docker compose -p rackpilot -f deployments/docker/docker-compose.yml up -d --build
 ```
@@ -117,6 +148,7 @@ curl -s http://127.0.0.1:8082/health | jq .
 curl -s http://127.0.0.1:9090/-/healthy
 curl -s http://127.0.0.1:3000/api/health | jq .
 curl -s http://127.0.0.1:8083/api/v1/health | jq .
+curl -s http://127.0.0.1:8084/api/v1/health | jq .
 ```
 
 | Service | URL |
@@ -126,61 +158,64 @@ curl -s http://127.0.0.1:8083/api/v1/health | jq .
 | GPU API | http://127.0.0.1:8080 |
 | BMC / Redfish | http://127.0.0.1:8082 |
 | Incidents API | http://127.0.0.1:8083 |
+| Investigations API | http://127.0.0.1:8084 |
 
-**Stop RackPilot only** (does not remove SSD bind mounts):
+Stop RackPilot only (preserves SSD bind mounts):
 
 ```bash
 docker compose -p rackpilot -f deployments/docker/docker-compose.yml stop
 ```
 
-Avoid `docker compose down -v` if you rely on `/mnt/ssd/rackpilot-data` persistence (see [docs/observability-docker.md](docs/observability-docker.md)).
+Avoid `docker compose down -v` if you rely on `/mnt/ssd/rackpilot-data` persistence — see [docs/observability-docker.md](docs/observability-docker.md).
+
+## Deployment options
+
+| | Docker Compose | Kubernetes (kind) |
+|---|----------------|-------------------|
+| **Best for** | Quick local dev, fixed host ports | K8s-native app orchestration |
+| **GPU / BMC / incident / investigator** | All-in-one Compose project | Deployments in `rackpilot` namespace |
+| **Prometheus / Grafana** | Compose (default) | Still Compose (scrapes K8s via API proxy) |
+| **Access** | `http://127.0.0.1:8080`–`8084` | `kubectl port-forward` to ClusterIP Services |
+
+Both methods can coexist. **Milestone 7.1** adds in-cluster Prometheus/Grafana in `rackpilot-monitoring` (see [docs/kubernetes-monitoring-migration.md](docs/kubernetes-monitoring-migration.md)). Compose monitoring can run in parallel until you validate and stop it manually.
 
 ## Kubernetes (kind)
 
-Optional lab cluster — details in [deployments/kubernetes/README.md](deployments/kubernetes/README.md).
+Full guide: [docs/kubernetes-deployment.md](docs/kubernetes-deployment.md) · cluster bootstrap: [deployments/kubernetes/README.md](deployments/kubernetes/README.md).
+
+**Application tier on existing cluster:**
 
 ```bash
-export KUBECONFIG=/mnt/ssd/rackpilot-kind/kubeconfig   # or your chosen path
-./deployments/kubernetes/kind/create-cluster.sh
-./deployments/kubernetes/kind/apply-workloads.sh
-./deployments/kubernetes/monitoring/sync-prometheus-k8s-creds.sh
-curl -X POST http://127.0.0.1:9090/-/reload
+export KUBECONFIG=/mnt/ssd/rackpilot-kind/kubeconfig
+./deployments/kubernetes/build-and-load-images.sh
+./deployments/kubernetes/deploy.sh
+./deployments/kubernetes/monitoring/deploy-monitoring.sh
+./deployments/kubernetes/monitoring/switch-apps-to-k8s-prometheus.sh
+./deployments/kubernetes/status.sh
 ```
 
-API remains on **127.0.0.1** only (e.g. port **16443** in the default kind config).
-
-## Simulators
-
-### GPU
-
-Docs: [docs/gpu-simulator.md](docs/gpu-simulator.md)
+Port-forward monitoring:
 
 ```bash
-curl -s http://127.0.0.1:8080/api/v1/gpus | jq .
-curl -X POST http://127.0.0.1:8080/api/v1/scenarios/overheating \
-  -H 'Content-Type: application/json' -d '{"gpu_ids":["gpu-0"]}'
+kubectl port-forward -n rackpilot-monitoring svc/prometheus 9090:9090
+kubectl port-forward -n rackpilot-monitoring svc/grafana 3000:3000
 ```
 
-### BMC / Redfish
-
-Docs: [docs/bmc-simulator.md](docs/bmc-simulator.md)
+Port-forward examples:
 
 ```bash
-curl -s http://127.0.0.1:8082/redfish/v1/ | jq .
-curl -X POST http://127.0.0.1:8082/api/v1/scenarios/fan-failure \
-  -H 'Content-Type: application/json' -d '{"component_id":"fan-0"}'
-curl -X POST http://127.0.0.1:8082/api/v1/scenarios/reset
+kubectl port-forward -n rackpilot svc/bmc-simulator 8082:8081
+kubectl port-forward -n rackpilot svc/incident-engine 8083:8083
+kubectl port-forward -n rackpilot svc/investigator 8084:8084
 ```
 
-**Static DMTF fixtures:** `RACKPILOT_BMC_MODE=static` — [docs/redfish-fixtures.md](docs/redfish-fixtures.md)
+Kind API remains on **127.0.0.1** only (e.g. port **16443**).
 
-## Monitoring
+## Monitoring screenshots
 
 ### Prometheus targets
 
 ![Prometheus targets](docs/images/prometheus-targets.png)
-
-### Example queries
 
 | Domain | Screenshot |
 |--------|------------|
@@ -189,25 +224,31 @@ curl -X POST http://127.0.0.1:8082/api/v1/scenarios/reset
 | Kubernetes | ![K8s query](docs/images/prometheus-kubernetes-metrics.png) |
 | Incidents | ![Incident metrics](docs/images/prometheus-incident-metrics.png) |
 
-### Grafana
+Grafana dashboards provision under folder **RackPilot**. Capture PNGs with [docs/images/CAPTURE.md](docs/images/CAPTURE.md).
 
-Dashboards provision automatically under folder **RackPilot**. Capture PNGs for your environment using [docs/images/CAPTURE.md](docs/images/CAPTURE.md) (manual Grafana login required in many setups).
-
-## Incident correlation
-
-Deterministic rules over Prometheus metrics — [docs/incident-correlation.md](docs/incident-correlation.md).
-
-Trigger a lab incident:
+## Example incident + investigation workflow
 
 ```bash
+# 1) Trigger lab incident
 curl -X POST http://127.0.0.1:8082/api/v1/scenarios/fan-failure \
   -H 'Content-Type: application/json' -d '{"component_id":"fan-0"}'
-# wait ~1–2 scrape intervals
+
+# 2) Wait ~45–60s for scrape + correlation poll
 curl -s http://127.0.0.1:8083/api/v1/incidents/active | jq .
+
+# 3) Investigate (read-only)
+INCIDENT_ID=$(curl -s http://127.0.0.1:8083/api/v1/incidents/active | jq -r '.data[0].incident_id')
+curl -s -X POST http://127.0.0.1:8084/api/v1/investigations \
+  -H 'Content-Type: application/json' \
+  -d "{\"incident_id\":\"$INCIDENT_ID\"}" | jq .
+
+# 4) Reset simulator
 curl -X POST http://127.0.0.1:8082/api/v1/scenarios/reset
 ```
 
 ## API reference
+
+### Incident engine (`:8083`)
 
 | Endpoint | Description |
 |----------|-------------|
@@ -217,25 +258,45 @@ curl -X POST http://127.0.0.1:8082/api/v1/scenarios/reset
 | `GET /api/v1/incidents/{id}` | Single incident |
 | `GET /api/v1/metrics` | Prometheus exposition |
 
+### Investigator (`:8084`)
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/v1/health` | Investigator health |
+| `POST /api/v1/investigations` | Body: `{"incident_id":"..."}` |
+| `GET /api/v1/investigations` | List investigations |
+| `GET /api/v1/investigations/{id}` | Investigation report |
+| `GET /api/v1/investigations/{id}/evidence` | Evidence timeline only |
+| `GET /metrics` | Prometheus exposition |
+
 ## Configuration
 
 | Variable | Service | Meaning |
 |----------|---------|---------|
 | `RACKPILOT_PUBLISH_HOST` | Compose | Bind address for published ports (default `127.0.0.1`) |
-| `RACKPILOT_BMC_MODE` | BMC | `dynamic` or `static` |
-| `RACKPILOT_PROMETHEUS_URL` | Incident engine | Prometheus base URL |
-| `RACKPILOT_INCIDENT_LISTEN` | Incident engine | Listen address (default `:8083`) |
-| `RACKPILOT_INCIDENT_POLL_MS` | Incident engine | Poll interval |
+| `RACKPILOT_BMC_MODE` | BMC | `dynamic` or `static` (DMTF fixtures) |
+| `RACKPILOT_INCIDENT_POLL_MS` | Incident engine | Prometheus poll interval |
+| `RACKPILOT_INVESTIGATOR_MODE` | Investigator | `deterministic` or `llm` |
+| `RACKPILOT_EVIDENCE_BEFORE` / `AFTER` | Investigator | PromQL range window around incident |
+| `RACKPILOT_LLM_API_KEY` | Investigator | Optional OpenAI-compatible key |
 
 See `deployments/docker/.env.example`.
 
-## Troubleshooting
+## Current limitations
 
-| Issue | Action |
-|-------|--------|
-| No Kubernetes metrics | Run `sync-prometheus-k8s-creds.sh`, reload Prometheus, confirm `kind` network attached |
-| No incidents | Confirm Prometheus targets UP; trigger BMC/GPU scenario; check `rackpilot_correlation_errors_total` |
-| kind API unreachable | Use dedicated `KUBECONFIG`; API on loopback only |
+- Incidents and investigations are **in-memory** (lost on restart)  
+- Synthetic/fixture telemetry — not a substitute for production SRE runbooks  
+- LLM mode enriches hypotheses but cannot confirm causation without explicit gates  
+- No automated remediation  
+- Static Redfish mode does not emit full dynamic BMC metric series  
+
+## Security considerations
+
+- Default Grafana credentials are **development only**  
+- Do not commit `.env`, kubeconfig tokens, or LLM API keys  
+- Incident engine uses a **dedicated** Kubernetes scrape ServiceAccount — not cluster-admin  
+- Investigator is **read-only** (HTTP GET to Prometheus/BMC; no kubectl writes)  
+- Publish on `127.0.0.1` unless you deliberately widen `RACKPILOT_PUBLISH_HOST`  
 
 ## Testing
 
@@ -247,24 +308,17 @@ go test ./...
 go test -race ./...
 ```
 
-## Security
-
-- Default Grafana credentials are **development only** — change before exposure.  
-- Do not commit `.env`, kubeconfig tokens, or `/mnt/ssd/.../prometheus/k8s/token`.  
-- Incident engine uses a **dedicated** Kubernetes scrape ServiceAccount, not an admin kubeconfig.  
-- Publish services on `127.0.0.1` unless you explicitly widen `RACKPILOT_PUBLISH_HOST`.
-
 ## Roadmap
 
-- Redfish EventLog ingestion into the signal model  
-- Persistent incident store  
-- Policy-gated remediation (no LLM required for basic playbooks)  
-- Optional LLM-assisted investigation (future milestone)  
+- Persistent incident/investigation store  
+- Redfish EventLog as first-class correlation signals  
+- Policy-gated, approval-based remediation  
+- Deeper GPU ↔ thermal cross-domain rules  
 
 ## Contributing
 
-Use conventional commits; open focused PRs. See existing package layout under `simulator/` and `incident/`.
+Use conventional commits; open focused PRs. Packages: `simulator/`, `incident/`, `investigation/`.
 
 ## License
 
-Apache License 2.0 — see [LICENSE](LICENSE) (project). DMTF fixtures under `testdata/redfish/dmtf/` are BSD 3-Clause — see `LICENSE.BSD` and `NOTICE.md`.
+Apache License 2.0 — [LICENSE](LICENSE). DMTF fixtures under `testdata/redfish/dmtf/` are BSD 3-Clause — see `LICENSE.BSD` and `NOTICE.md`.

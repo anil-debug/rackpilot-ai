@@ -1,0 +1,73 @@
+# In-cluster Prometheus (Milestone 7.1) — ClusterIP DNS scraping.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: rackpilot-gpu-simulator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - gpu-simulator.rackpilot.svc.cluster.local:8080
+        labels:
+          rackpilot_telemetry: synthetic
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-bmc-simulator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - bmc-simulator.rackpilot.svc.cluster.local:8081
+        labels:
+          rackpilot_telemetry: synthetic
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-incident-engine
+    metrics_path: /api/v1/metrics
+    static_configs:
+      - targets:
+          - incident-engine.rackpilot.svc.cluster.local:8083
+        labels:
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-investigator
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - investigator.rackpilot.svc.cluster.local:8084
+        labels:
+          rackpilot_deployment: kubernetes
+
+  - job_name: rackpilot-kube-state-metrics
+    scrape_interval: 30s
+    static_configs:
+      - targets:
+          - rackpilot-kube-state-metrics.rackpilot-monitoring.svc.cluster.local:8080
+        labels:
+          cluster: rackpilot-kind
+          rackpilot_telemetry: kubernetes
+
+  - job_name: rackpilot-kubernetes-cadvisor
+    scheme: https
+    honor_timestamps: false
+    scrape_interval: 30s
+    bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+    tls_config:
+      ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+    kubernetes_sd_configs:
+      - role: node
+    relabel_configs:
+      - target_label: __address__
+        replacement: kubernetes.default.svc:443
+      - source_labels: [__meta_kubernetes_node_name]
+        target_label: __metrics_path__
+        regex: (.+)
+        replacement: /api/v1/nodes/${1}/proxy/metrics/cadvisor
+      - target_label: cluster
+        replacement: rackpilot-kind
+      - target_label: rackpilot_telemetry
+        replacement: kubernetes
+    metric_relabel_configs:
+      - source_labels: [namespace]
+        regex: rackpilot
+        action: keep

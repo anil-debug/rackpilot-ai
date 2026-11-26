@@ -1,0 +1,14 @@
+# RackPilot application tier on Kubernetes (Milestone 7). Does not include demo workloads.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - config/rackpilot-app-config.yaml
+  - config/compose-prometheus.yaml
+  - workloads/gpu-simulator/deployment.yaml
+  - workloads/gpu-simulator/service.yaml
+  - workloads/bmc-simulator/deployment.yaml
+  - workloads/bmc-simulator/service.yaml
+  - workloads/incident-engine/deployment.yaml
+  - workloads/incident-engine/service.yaml
+  - workloads/investigator/deployment.yaml
+  - workloads/investigator/service.yaml

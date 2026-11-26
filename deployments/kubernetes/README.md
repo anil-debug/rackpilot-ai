@@ -1,15 +1,36 @@
-# RackPilot Kubernetes (Milestone 4)
+# RackPilot Kubernetes
 
-Isolated **kind** lab for workload and cluster monitoring. The **only** observability UI remains Docker Compose **Prometheus** and **Grafana** (integration is a later phase).
+Isolated **kind** lab plus **Kubernetes-native application deployment** (Milestone 7). Compose **Prometheus** and **Grafana** remain the monitoring UI; apps run as Deployments in namespace `rackpilot`.
 
-## Layout
+See [docs/kubernetes-deployment.md](../../docs/kubernetes-deployment.md) for architecture, E2E, and port-forward access.
+
+### Application tier (Milestone 7)
+
+```bash
+export KUBECONFIG=/mnt/ssd/rackpilot-kind/kubeconfig
+./deployments/kubernetes/build-and-load-images.sh
+./deployments/kubernetes/deploy.sh
+./deployments/kubernetes/status.sh
+```
+
+| Script | Purpose |
+|--------|---------|
+| `build-and-load-images.sh` | Build four app images, `kind load` |
+| `deploy.sh` | Apply kustomize, patch Prometheus bridge, reload scrape |
+| `delete.sh` | Remove core app resources only (interactive) |
+| `status.sh` | Deployments, services, diagnostics |
+
+### Milestone 4 lab (demo workloads)
 
 | Path | Purpose |
 |------|---------|
 | `kind/` | Cluster config, create script |
 | `namespaces/` | `rackpilot`, `rackpilot-monitoring` |
-| `workloads/` | Demo API (2 replicas) and worker (1 replica) |
-| `monitoring/` | `kube-state-metrics` only |
+| `workloads/demo-*.yaml` | Demo API and worker |
+| `workloads/gpu-simulator/` … | **M7** application services |
+| `config/` | ConfigMaps and Compose Prometheus bridge |
+| `monitoring/` | `kube-state-metrics`, scrape RBAC, sync script |
+| `kustomization.yaml` | Kustomize root for M7 apps |
 
 ## Prerequisites
 

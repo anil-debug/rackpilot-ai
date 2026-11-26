@@ -91,6 +91,37 @@ services:
       retries: 5
       start_period: 15s
 
+  investigator:
+    build:
+      context: ../..
+      dockerfile: investigation/Dockerfile
+    image: rackpilot/investigator:0.1.0
+    container_name: rackpilot-investigator
+    restart: unless-stopped
+    networks:
+      - rackpilot
+    ports:
+      - "${RACKPILOT_PUBLISH_HOST:-127.0.0.1}:8084:8084"
+    environment:
+      RACKPILOT_INVESTIGATOR_LISTEN: ":8084"
+      RACKPILOT_PROMETHEUS_URL: "http://prometheus:9090"
+      RACKPILOT_INCIDENT_ENGINE_URL: "http://incident-engine:8083"
+      RACKPILOT_BMC_URL: "http://bmc-simulator:8081"
+      RACKPILOT_INVESTIGATOR_MODE: ${RACKPILOT_INVESTIGATOR_MODE:-deterministic}
+      RACKPILOT_EVIDENCE_BEFORE: ${RACKPILOT_EVIDENCE_BEFORE:-10m}
+      RACKPILOT_EVIDENCE_AFTER: ${RACKPILOT_EVIDENCE_AFTER:-5m}
+    depends_on:
+      incident-engine:
+        condition: service_healthy
+      bmc-simulator:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8084/api/v1/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
   incident-engine:
     build:
       context: ../..
